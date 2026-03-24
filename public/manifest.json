@@ -1,0 +1,52 @@
+{
+  "name": "Shiny RNG Manipulation Tool",
+  "short_name": "RNG Pok",
+  "description": "Herramienta PWA para manipulación del RNG en Pokémon Gen 3/4/5",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "orientation": "portrait",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "categories": ["games", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Seed Finder",
+      "url": "/?module=seed-finder",
+      "description": "Buscar semilla inicial"
+    },
+    {
+      "name": "Eon Timer",
+      "url": "/?module=eon-timer",
+      "description": "Temporizador de precisión"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: #1a1a2e;
+  color: #e2e8f0;
+  font-family: 'JetBrains Mono', monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100dvh;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #1a1a2e; }
+::-webkit-scrollbar-thumb { background: #e94560; border-radius: 3px; }
+
+/* Animación shiny */
+@keyframes shiny-glow {
+  0%, 100% { box-shadow: 0 0 5px #ffd700, 0 0 10px #ffd700; }
+  50% { box-shadow: 0 0 15px #ffd700, 0 0 30px #ffd700, 0 0 45px #ffd700; }
+}
+
+.shiny-glow {
+  animation: shiny-glow 2s ease-in-out infinite;
+}
