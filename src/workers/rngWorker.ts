@@ -1,87 +1,75 @@
 /**
- * rngWorker.ts — Web Worker multi-generación
- * Recibe SearchOptions y postea resultados en chunks para no bloquear la UI.
+ * rngWorker.ts — Web Worker multi-generación.
+ * Delega TODA la lógica de iteración en rngEngine.ts (Single Source of Truth).
+ * El hilo principal no se bloquea: los resultados se envían en chunks de 10k frames.
  */
-import { lcgNext, calcPID } from '../utils/lcg'
-import { getNature, isShiny as isShinyFn, getGender } from '../utils/shiny'
-import { gen5IVsFromMT } from '../utils/gen5seed'
+import { rngSearch, type SearchOptions, type RNGFrame } from '../utils/rngEngine'
 import type { Nature } from '../utils/shiny'
 import type { GameGen } from '../context/GameContext'
 
 export interface FrameResult {
-  frame:    number
-  pid:      number
-  nature:   Nature
-  shiny:    boolean
-  gender:   'M' | 'F' | '\u2013'
-  ability:  number
-  ivs?:     [number,number,number,number,number,number]
+  frame:   number
+  pid:     number
+  nature:  Nature
+  shiny:   boolean
+  gender:  'M' | 'F' | '\u2013'
+  ability: number
+  ivs?:    [number,number,number,number,number,number]
 }
 
 export interface SearchFilters {
-  tid:           number
-  sid:           number
-  genderRatio:   number
-  maxFrames?:    number
-  targetShiny?:  boolean
+  tid:            number
+  sid:            number
+  genderRatio:    number
+  maxFrames?:     number
+  targetShiny?:   boolean
   targetNatures?: Nature[]
-  gender?:       'M' | 'F'
+  gender?:        'M' | 'F'
   targetAbility?: 0 | 1
-  gen?:          GameGen
-  fixedSeed?:    boolean  // Esmeralda
+  gen?:           GameGen
+  fixedSeed?:     boolean
 }
 
 self.onmessage = (e: MessageEvent) => {
   const { seed, filters } = e.data as { seed: number; filters: SearchFilters }
   const {
     tid, sid, genderRatio,
-    maxFrames  = 500_000,
+    maxFrames     = 500_000,
     targetShiny,
     targetNatures,
     gender,
     targetAbility,
-    gen         = 4,
-    fixedSeed   = false,
+    gen           = 4,
+    fixedSeed     = false,
   } = filters
 
+  const opts: SearchOptions = {
+    gen,
+    seed,
+    tid,
+    sid,
+    maxFrames,
+    genderRatio,
+    targetShiny,
+    targetNatures: targetNatures as Nature[] | undefined,
+    targetGender:  gender,
+    targetAbility,
+    fixedSeed,
+  }
+
   const results: FrameResult[] = []
-  const seedInit = (fixedSeed && gen === 3) ? 0 : (seed >>> 0)
-  const CHUNK    = 10_000
+  const CHUNK = 10_000
+  let   chunk = 0
 
-  let rng = seedInit
+  // Iterar el generador de rngEngine (Single Source of Truth)
+  for (const frame of rngSearch(opts)) {
+    results.push(frame as FrameResult)
 
-  for (let frame = 0; frame < maxFrames; frame++) {
-    let pid: number
-    let ivs: [number,number,number,number,number,number] | undefined
-
-    if (gen === 5) {
-      ivs = gen5IVsFromMT(rng)
-      const r1 = lcgNext(rng)
-      const r2 = lcgNext(r1)
-      pid  = calcPID(r1, r2)
-      rng  = r1
-    } else {
-      const r1 = lcgNext(rng)
-      const r2 = lcgNext(r1)
-      pid  = calcPID(r1, r2)
-      rng  = r1
+    // Progress cada CHUNK frames procesados (usamos frame.frame como indicador)
+    if (frame.frame >= chunk * CHUNK) {
+      self.postMessage({ type: 'progress', frame: frame.frame, total: maxFrames })
+      chunk++
     }
-
-    const nat    = getNature(pid)
-    const shiny  = isShinyFn(pid, tid, sid)
-    const gdr    = getGender(pid, genderRatio)
-    const abil   = pid & 1
-
-    const passes =
-      (!targetShiny    || shiny) &&
-      (!targetNatures  || targetNatures.includes(nat)) &&
-      (!gender         || gdr === gender) &&
-      (targetAbility === undefined || abil === targetAbility)
-
-    if (passes) results.push({ frame, pid, nature: nat, shiny, gender: gdr, ability: abil, ivs })
-
-    if (frame % CHUNK === 0)
-      self.postMessage({ type: 'progress', frame, total: maxFrames })
   }
 
   self.postMessage({ type: 'done', results })
